@@ -29,9 +29,6 @@
         shadowRoot.appendChild(clone);
         shadowElement = shadowRoot.getElementById('button');
         customElement = this;
-
-        console.log(customElement);
-
         button = Button(customElement, shadowElement);
         button.init();
     }
@@ -43,19 +40,19 @@
         var _color = customElement.getAttribute('color') || '#f06';
         var _txt = customElement.getAttribute('text') || 'Button'
         var _textColor = customElement.getAttribute('text-color') || '#fff';
+        var _fontSize = customElement.getAttribute('font-size') || '13px';
 
         var _overEffectSize = 64;
+        var _loopFlag = false;
         var _svg = Snap(_width, _height + 3).remove();
         var _rect = null;
         var _text = null;
         var _focusCirlce = null;
         var _pressedCircle = null;
         var _group = null;
-        var _clipRect = null;
 
         function init(){
-            _rect = _createRect();
-            _clipRect = _getClipRect();
+            _rect = _getRect();
             _focusCirlce = _getFocusCircle();
             _pressedCircle = _getPressedCircle();
             _text = _getText();
@@ -64,16 +61,17 @@
             _group.mouseover(onMouseOver);
             _group.mouseout(onMouseOut);
             _group.click(onMousePress);
+
             _svg.prependTo(shadowElement);
         }
 
         //=================================
         // ベースとなる下地を用意
         //=================================
-        function _createRect(){
+        function _getRect(){
             var base = _svg.rect(0, 0, _width, _height, _borderRadius, _borderRadius).attr({
                 fill : _color,
-                filter : _getShadowFilter()
+                filter : _getFilterShadow()
             });
             return base;
         }
@@ -81,7 +79,7 @@
         //=================================
         // ドロップシャドウの生成
         //=================================
-        function _getShadowFilter(){
+        function _getFilterShadow(){
             var filterRep = Snap.filter.shadow(0, 1, 1, '#333', 0.8);
             var filter = _svg.filter(filterRep);
             return filter;
@@ -94,7 +92,7 @@
             var text = _svg.text(_width / 2, _height / 2, _txt).attr({
                 fill : _textColor,
                 fontFamily : 'Helvetica',
-                fontSize : '14px',
+                fontSize : _fontSize,
                 letterSpacing : '0.08em',
                 dominantBaseline : 'middle',
                 textAnchor: 'middle'
@@ -107,14 +105,13 @@
         //=================================
         function _getClipRect(){
             var clipRect = _svg.rect(0, 0, _width, _height, _borderRadius, _borderRadius).attr({
-                fill : '#000',
                 opacity : 0
             });
             return clipRect;
         }
 
         //=================================
-        // ホバー用のエフェクト
+        // マウスオーバー用のエフェクト
         //=================================
         function _getFocusCircle(){
             var focusCircle = _svg.circle(_width / 2, _height / 2, _overEffectSize).attr({
@@ -138,22 +135,25 @@
         }
 
         //=================================
+        // マウスオーバーのループアニメーション
+        //=================================
+        function _loopAnimation(){
+            var radius = _loopFlag ? _overEffectSize : _overEffectSize - 4;
+            this.animate({
+                r : radius
+            }, 800, null, _loopAnimation);
+            _loopFlag = !_loopFlag;
+        }
+
+        //=================================
         // マウスオーバー イベント
         //=================================
         function onMouseOver(){
-            var flag = false;
-
-            function loop(){
-                var radius = flag ? _overEffectSize : _overEffectSize - 4;
-                this.animate({
-                    r : radius
-                }, 900, loop);
-                flag = !flag;
-            }
+            _loopFlag = false;
 
             _focusCirlce.stop().animate({
                 opacity : 0.5
-            }, 400, mina.easein, loop);
+            }, 400, mina.easein, _loopAnimation);
         }
 
         //=================================
@@ -180,7 +180,7 @@
                 cx : x,
                 cy : y,
                 r : 30,
-                opacity : 0.1
+                opacity : 0.2
             }).stop().animate({
                 r : _overEffectSize,
                 opacity : 0
